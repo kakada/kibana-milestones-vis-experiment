@@ -1,0 +1,39 @@
+version: "3"
+
+volumes:
+  elastic:
+
+services:
+  elasticsearch:
+    image: elasticsearch:7.12.0
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - elastic:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    healthcheck:
+      test: curl -s http://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+        max-file: '10'
+
+  kibana-milestones-vis:
+    build: .
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro # this file is a pair with elasticsearch and create-certs compose
+    ports:
+      - 5601:5601
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+        max-file: '10'
